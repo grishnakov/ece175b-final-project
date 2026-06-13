@@ -1,0 +1,27 @@
+sources/
+
+# LaTeX build artifacts
+writeup/*.aux
+writeup/*.bbl
+writeup/*.blg
+writeup/*.log
+writeup/*.out
+writeup/*.toc
+writeup/*.fls
+writeup/*.fdb_latexmk
+writeup/*.synctex.gz
+writeup/sections/*.aux
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+code/.venv/
+
+# Training artifacts
+code/experiments/
+code/data/
+
+*.md
+!README.md

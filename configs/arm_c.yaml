@@ -1,0 +1,9 @@
+# Arm C: Conservative Drifting — sharp normalization, log-KDE scalar loss
+# Expected: stable training without stop-gradient (the main method)
+name: arm_c
+description: "Conservative Drifting (sharp norm, log-KDE, no stop-grad)"
+
+normalization: sharp     # Z#_p = E[k#(x,y)]
+loss:
+  type: log_kde
+  stop_grad: false

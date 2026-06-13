@@ -1,0 +1,9 @@
+# Arm B: Vanilla drifting — original normalization, NO stop-gradient
+# Expected: drift collapse / instability (confirms why stop-grad exists)
+name: arm_b
+description: "Vanilla drifting without stop-gradient (expected unstable)"
+
+normalization: vanilla   # Z_p = E[k(x,y)]
+loss:
+  type: mse_field
+  stop_grad: false

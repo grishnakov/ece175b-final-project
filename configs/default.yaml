@@ -1,0 +1,33 @@
+# Default configuration — shared across all ablation arms
+seed: 42
+
+model:
+  type: unet
+  channels: 96           # base channel count (~31M params with mults below)
+  channel_mults: [1, 2, 2, 2]
+  num_res_blocks: 2
+  attention_resolutions: [16]  # apply attention at 16x16
+  noise_dim: 128         # input noise dimension
+
+kernel:
+  type: laplacian        # gaussian | laplacian
+  sigma: 0.1             # bandwidth
+
+training:
+  steps: 100000
+  batch_size: 128
+  lr: 0.0001
+  weight_decay: 0.0
+  adam_betas: [0.9, 0.999]
+  grad_clip: 1.0
+  log_every: 100
+  save_every: 5000
+  eval_every: 10000
+  num_eval_samples: 10000
+
+data:
+  dataset: cifar10
+  image_size: 32
+  num_workers: 4
+
+output_dir: experiments/

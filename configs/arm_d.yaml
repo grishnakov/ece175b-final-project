@@ -1,0 +1,9 @@
+# Arm D: Sharp normalization, log-KDE scalar loss, WITH extra stop-gradient
+# Expected: should ≈ Arm C; tests whether extra stop-grad helps/hurts under sharp norm
+name: arm_d
+description: "Sharp norm + log-KDE + extra stop-grad (tests Turan's claim)"
+
+normalization: sharp     # Z#_p = E[k#(x,y)]
+loss:
+  type: log_kde
+  stop_grad: true

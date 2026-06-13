@@ -1,0 +1,62 @@
+# WikiArt headline run v2 — targeted fixes after the v1 blurry/style-flat result.
+#
+# v1 (configs/wikiart_headline.yaml) gave muddy, style-indistinct samples: pixel-
+# space distribution-matching rewards a blurry mean, and styles barely separate in
+# pixel distance. v2 applies the fixes:
+#   1. FEATURE-SPACE kernel: run the KDE on frozen VGG16 perceptual features
+#      (kernel.space=feature) instead of raw pixels -> matches real texture, not a
+#      blurry average. sigma re-tuned for feature space (~0.15x within-class median).
+#   2. FiLM conditioning: the class embedding now also per-channel modulates every
+#      ResBlock (auto-enabled by model.num_classes), not just an additive noise shift
+#      -> a much stronger style-conditioning mechanism.
+# Method is still arm C (sharp norm + log-KDE + no stop-grad), class-conditional,
+# 64x64, all 27 styles, class-balanced batches.
+name: wikiart_v2
+description: "CD WikiArt 64x64, 27 styles: feature-space (VGG) kernel + FiLM conditioning"
+
+normalization: sharp
+loss:
+  type: log_kde
+  stop_grad: false
+
+model:
+  type: unet
+  channels: 128
+  channel_mults: [1, 2, 2, 2]
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  noise_dim: 128
+  num_classes: 27                  # enables per-class embedding + FiLM in every ResBlock
+
+kernel:
+  type: laplacian
+  sigma: 25.0                      # tuned for VGG feature space (pixel run used 10 at D=12288)
+  space: feature                   # <-- run the KDE on perceptual features, not pixels
+  feature_net: vgg16
+  feature_layer: 16                # VGG16 features[:16] == relu3_3 (256ch)
+  feature_pool: 4                  # adaptive-pool to 4x4 -> 4096-dim features
+
+training:
+  steps: 90000                     # ~47h at 0.527 steps/s (v2 calibration); fits the ~50h budget
+  batch_size: 128                  # == classes_per_batch * samples_per_class
+  classes_per_batch: 8
+  samples_per_class: 16
+  lr: 0.0002
+  lr_schedule: cosine
+  lr_min: 0.000001
+  warmup_steps: 1000
+  ema_decay: 0.9999
+  weight_decay: 0.0
+  adam_betas: [0.9, 0.999]
+  grad_clip: 1.0
+  log_every: 100
+  save_every: 5000
+  eval_every: 2500                 # frequent sample grids to watch quality early
+  num_eval_samples: 64
+
+data:
+  dataset: wikiart
+  image_size: 64
+  num_workers: 8
+
+output_dir: experiments/

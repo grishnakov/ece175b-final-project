@@ -1,0 +1,59 @@
+# WikiArt headline run: Conservative Drifting (arm-C method), CLASS-CONDITIONAL,
+# 64x64, all 27 styles. Single-step generator conditioned on style label.
+#
+# Differences from the CIFAR runs (all forced by the new dataset/resolution):
+#   - data: wikiart 64x64 (D=12288) instead of cifar10 32x32 (D=3072)
+#   - class-conditional: model.num_classes=27 -> per-class noise embedding;
+#     loss masks the in-batch KDE to same-class anchors (see log_kde.py)
+#   - class-balanced batches (classes_per_batch x samples_per_class) so every
+#     in-batch style has >=2 anchors for the masked negative KDE
+#   - kernel.sigma re-tuned for D=12288: 0.1 underflows (exp(-490)); ~10 (≈0.14x
+#     the measured within-class median distance ~71) gives a healthy kernel
+#
+# Method is otherwise unchanged arm C: sharp norm + log-KDE + NO stop-grad.
+# NOTE: full model:/training: blocks required (train.py shallow-merges over default).
+name: wikiart_headline
+description: "CD class-conditional WikiArt 64x64, 27 styles (arm-C method)"
+
+normalization: sharp
+loss:
+  type: log_kde
+  stop_grad: false
+
+model:
+  type: unet
+  channels: 128
+  channel_mults: [1, 2, 2, 2]      # 64->32->16->8, bottleneck 8x8
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  noise_dim: 128
+  num_classes: 27                  # <-- enables class conditioning
+
+kernel:
+  type: laplacian
+  sigma: 10.0                      # re-tuned for D=12288 (CIFAR used 0.1 at D=3072)
+
+training:
+  steps: 200000                    # ~96h at 0.577 steps/s (64x64 calibration); fits the ~120h budget
+  batch_size: 128                  # == classes_per_batch * samples_per_class
+  classes_per_batch: 8             # styles per batch
+  samples_per_class: 16            # images per style per batch (>=2 for masked KDE)
+  lr: 0.0002
+  lr_schedule: cosine
+  lr_min: 0.000001
+  warmup_steps: 1000
+  ema_decay: 0.9999
+  weight_decay: 0.0
+  adam_betas: [0.9, 0.999]
+  grad_clip: 1.0
+  log_every: 100
+  save_every: 5000
+  eval_every: 10000
+  num_eval_samples: 64
+
+data:
+  dataset: wikiart
+  image_size: 64
+  num_workers: 8
+
+output_dir: experiments/

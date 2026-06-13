@@ -1,0 +1,9 @@
+# Arm A: Vanilla drifting — original normalization, stop-gradient MSE loss
+# Expected: working baseline (matches Deng et al. qualitatively)
+name: arm_a
+description: "Vanilla drifting with stop-gradient (baseline)"
+
+normalization: vanilla   # Z_p = E[k(x,y)]
+loss:
+  type: mse_field
+  stop_grad: true

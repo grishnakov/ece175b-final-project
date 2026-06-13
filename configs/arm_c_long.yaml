@@ -1,0 +1,31 @@
+# Arm C (long): Conservative Drifting under a serious training recipe.
+# Sharp normalization + log-KDE scalar loss + NO stop-gradient (same method
+# as arm_c), but trained 3x longer with EMA and warmup+cosine LR decay.
+#
+# Final-report framing: we test whether the conservative objective keeps
+# improving under a standard longer-training recipe (EMA + cosine LR). This
+# changes several stabilizers at once and is NOT a single-stabilizer ablation.
+name: arm_c_long
+description: "Conservative Drifting, 300k steps + EMA + cosine LR (final run)"
+
+normalization: sharp     # Z#_p = E[k#(x,y)]
+loss:
+  type: log_kde
+  stop_grad: false       # the core CD claim: stable without stop-gradient
+
+# Full training block (shallow-merges over default.yaml, replacing it entirely).
+training:
+  steps: 300000
+  batch_size: 128
+  lr: 0.0002             # peak LR (warmup ramps up to this)
+  lr_schedule: cosine
+  lr_min: 0.000001
+  warmup_steps: 1000
+  ema_decay: 0.9999
+  weight_decay: 0.0
+  adam_betas: [0.9, 0.999]
+  grad_clip: 1.0
+  log_every: 100
+  save_every: 5000
+  eval_every: 10000
+  num_eval_samples: 10000

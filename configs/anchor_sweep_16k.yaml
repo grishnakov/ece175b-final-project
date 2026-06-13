@@ -1,0 +1,10 @@
+# Anchor-set scaling sweep: N=16000.
+# Matched 20k-step anchor-scaling run.
+name: anchor_sweep_16k
+anchor_n: 16000
+
+training:
+  steps: 20000
+  batch_size: 128
+  lr: 0.0001
+  grad_clip: 1.0

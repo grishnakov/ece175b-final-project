@@ -1,0 +1,19 @@
+[project]
+name = "cdmodels"
+version = "0.1.0"
+description = "Conservative Drifting: Sharp-Normalized Log-KDE Training"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "torch>=2.6",
+    "torchvision>=0.21",
+    "numpy>=2.0",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "pillow>=10.0",
+    "clean-fid>=0.1.35",
+    "scipy>=1.14",
+]
+
+[tool.ruff]
+line-length = 100

@@ -1,0 +1,57 @@
+# CD headline run: arm C method (sharp norm + log-KDE, NO stop-grad) at 4x capacity.
+#
+# CLEAN CAPACITY ABLATION: this config is arm_c_long's EXACT training recipe
+# (batch 128, lr 2e-4, 300k steps, warmup 1000, cosine to 1e-6, EMA 0.9999) with
+# ONLY the model enlarged to ~127M params. Calibration showed the GB10 saturates
+# at ~0.21 steps/s for the 127M model at batch 512 (compute-bound), so within the
+# ~100h budget the sample budget is fixed at ~38.4M (== arm_c_long); we spend it as
+# 300k x 128 to (a) land the 100k and 300k FID milestones for a direct comparison
+# and (b) change ONLY capacity vs arm_c_long. See the plan .md for the full rationale.
+#
+# NOTE: carries FULL model: and training: blocks on purpose — train.py shallow-
+# merges over default.yaml with a top-level dict.update, so a partial block would
+# REPLACE default's, not merge. Every key the trainer reads must be present here.
+name: cd_headline
+description: "CD headline: arm_c_long recipe at 4x capacity (127M UNet, batch 128, 300k, cosine+EMA)"
+
+normalization: sharp     # Z#_p = E[k#(x,y)] (documentation; sharpness lives in log_sharp)
+loss:
+  type: log_kde
+  stop_grad: false       # the core CD claim: stable without stop-gradient
+
+model:
+  type: unet
+  channels: 192          # 2x the 31M baseline's 96 base channels
+  channel_mults: [1, 2, 2, 2]   # SAME topology as the 31M baseline
+  num_res_blocks: 3      # +1 block/level vs baseline (the only depth change)
+  attention_resolutions: [16, 8]  # adds one attention stage vs baseline's [16]
+  noise_dim: 128
+
+kernel:
+  type: laplacian
+  sigma: 0.1
+
+# Training block == arm_c_long's, verbatim. ONLY the model above differs, so this
+# is a pure capacity ablation against arm_c (392 @100k) and arm_c_long (317 @300k).
+training:
+  steps: 300000          # arm_c_long-matched horizon; confirmed to fit budget by the batch-128 re-probe
+  batch_size: 128        # == arm_c_long (KDE anchors N == batch_size == 128)
+  lr: 0.0002             # == arm_c_long; also the sqrt-scaling anchor (2e-4 @ B=128)
+  lr_schedule: cosine
+  lr_min: 0.000001
+  warmup_steps: 1000
+  ema_decay: 0.9999
+  weight_decay: 0.0
+  adam_betas: [0.9, 0.999]
+  grad_clip: 1.0
+  log_every: 100
+  save_every: 5000       # fine-grained: cap lost work on the known-flaky host
+  eval_every: 10000      # sample-grid PNGs only (FID is a separate offline step)
+  num_eval_samples: 10000
+
+data:
+  dataset: cifar10
+  image_size: 32
+  num_workers: 4
+
+output_dir: experiments/
